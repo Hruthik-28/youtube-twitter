@@ -2,7 +2,10 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary, deleteOnCloudinary } from "../utils/cloudinary.js";
+import {
+    uploadOnCloudinary,
+    deleteOnCloudinary
+} from "../utils/cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import mongoose, { isValidObjectId } from "mongoose";
 
@@ -23,9 +26,9 @@ const getAllVideos = asyncHandler(async (req, res) => {
                 index: "search-videos",
                 text: {
                     query: query,
-                    path: ["title", "description"], //search only on title, desc
-                },
-            },
+                    path: ["title", "description"] //search only on title, desc
+                }
+            }
         });
     }
 
@@ -36,8 +39,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
         pipeline.push({
             $match: {
-                owner: new mongoose.Types.ObjectId(userId),
-            },
+                owner: new mongoose.Types.ObjectId(userId)
+            }
         });
     }
 
@@ -49,8 +52,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
     if (sortBy && sortType) {
         pipeline.push({
             $sort: {
-                [sortBy]: sortType === "asc" ? 1 : -1,
-            },
+                [sortBy]: sortType === "asc" ? 1 : -1
+            }
         });
     } else {
         pipeline.push({ $sort: { createdAt: -1 } });
@@ -60,7 +63,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
     const options = {
         page: parseInt(page, 10),
-        limit: parseInt(limit, 10),
+        limit: parseInt(limit, 10)
     };
 
     const video = await Video.aggregatePaginate(videoAggregate, options);
@@ -82,11 +85,11 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const thumbnailLocalPath = req.files?.thumbnail[0].path;
 
     if (!videoFileLocalPath) {
-        throw new ApiError(400, "Video File is required");
+        throw new ApiError(400, "videoFileLocalPath is required");
     }
 
     if (!thumbnailLocalPath) {
-        throw new ApiError(400, "thumbnail is required");
+        throw new ApiError(400, "thumbnailLocalPath is required");
     }
 
     const videoFile = await uploadOnCloudinary(videoFileLocalPath);
@@ -106,11 +109,11 @@ const publishAVideo = asyncHandler(async (req, res) => {
         duration: videoFile.duration,
         videoFile: {
             url: videoFile.url,
-            public_id: videoFile.public_id,
+            public_id: videoFile.public_id
         },
         thumbnail: {
             url: thumbnail.url,
-            public_id: thumbnail.public_id,
+            public_id: thumbnail.public_id
         },
         owner: req.user?._id,
         isPublished: true
@@ -138,16 +141,16 @@ const getVideoById = asyncHandler(async (req, res) => {
     const video = await Video.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.ObjectId(videoId),
-            },
+                _id: new mongoose.Types.ObjectId(videoId)
+            }
         },
         {
             $lookup: {
                 from: "likes",
                 localField: "_id",
                 foreignField: "video",
-                as: "likes",
-            },
+                as: "likes"
+            }
         },
         {
             $lookup: {
@@ -161,57 +164,57 @@ const getVideoById = asyncHandler(async (req, res) => {
                             from: "subscriptions",
                             localField: "_id",
                             foreignField: "channel",
-                            as: "subscribers",
-                        },
+                            as: "subscribers"
+                        }
                     },
                     {
                         $addFields: {
                             subscribersCount: {
-                                $size: "$subscribers",
+                                $size: "$subscribers"
                             },
                             isSubscribed: {
                                 $cond: {
                                     if: {
                                         $in: [
                                             req.user?._id,
-                                            "$subscribers.subscriber",
-                                        ],
+                                            "$subscribers.subscriber"
+                                        ]
                                     },
                                     then: true,
-                                    else: false,
-                                },
-                            },
-                        },
+                                    else: false
+                                }
+                            }
+                        }
                     },
                     {
                         $project: {
                             username: 1,
                             "avatar.url": 1,
                             subscribersCount: 1,
-                            isSubscribed: 1,
-                        },
-                    },
-                ],
-            },
+                            isSubscribed: 1
+                        }
+                    }
+                ]
+            }
         },
         {
             $addFields: {
                 likesCount: {
-                    $size: "$likes",
+                    $size: "$likes"
                 },
                 owner: {
-                    $first: "$owner",
+                    $first: "$owner"
                 },
                 isLiked: {
                     $cond: {
                         if: {
-                            $in: [req.user?._id, "$likes.likedBy"],
+                            $in: [req.user?._id, "$likes.likedBy"]
                         },
                         then: true,
-                        else: false,
-                    },
-                },
-            },
+                        else: false
+                    }
+                }
+            }
         },
         {
             $project: {
@@ -224,9 +227,9 @@ const getVideoById = asyncHandler(async (req, res) => {
                 comments: 1,
                 owner: 1,
                 likesCount: 1,
-                isLiked: 1,
-            },
-        },
+                isLiked: 1
+            }
+        }
     ]);
 
     if (!video) {
@@ -236,21 +239,21 @@ const getVideoById = asyncHandler(async (req, res) => {
     // increment views if video fetched successfully
     await Video.findByIdAndUpdate(videoId, {
         $inc: {
-            views: 1,
-        },
+            views: 1
+        }
     });
 
     // add this video to user watch history
     await User.findByIdAndUpdate(req.user?._id, {
         $addToSet: {
-            watchHistory: videoId,
-        },
+            watchHistory: videoId
+        }
     });
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200, video, "video details fetched successfully")
+            new ApiResponse(200, video[0], "video details fetched successfully")
         );
 });
 
@@ -303,9 +306,9 @@ const updateVideo = asyncHandler(async (req, res) => {
                 description,
                 thumbnail: {
                     public_id: thumbnail.public_id,
-                    url: thumbnail.url,
-                },
-            },
+                    url: thumbnail.url
+                }
+            }
         },
         { new: true }
     );
@@ -383,8 +386,8 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
         videoId,
         {
             $set: {
-                isPublished: !video?.isPublished,
-            },
+                isPublished: !video?.isPublished
+            }
         },
         { new: true }
     );
@@ -410,5 +413,5 @@ export {
     deleteVideo,
     getAllVideos,
     getVideoById,
-    togglePublishStatus,
+    togglePublishStatus
 };
