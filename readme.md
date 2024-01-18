@@ -5,8 +5,12 @@
 This is a ``YOUTUBE + TWITTER`` backend project that covers allmost the functionalities of youtube 
 and also combines the tweet functionality from twitter into it. Find more about his project in the documentaion below.
 
-## API Documentation
-- [Read full API Documentaion here](https://documenter.getpostman.com/view/28570926/2s9YsNdVwW)
+## Important links
+
+| Content            | Link                                                                        |
+| -------------------| ----------------------------------------------------------------------------|
+| API Documentation  | [click here](https://documenter.getpostman.com/view/28570926/2s9YsNdVwW)    |
+| Model              | [click here ](https://app.eraser.io/workspace/YtPqZ1VogxGy1jzIDkzj)         |
 
 ## Features
 
