@@ -4,6 +4,9 @@
   "description": "backend with coffee",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": "14.x"
+  },
   "scripts": {
     "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
   },
@@ -28,6 +31,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.0",
     "mongoose-aggregate-paginate-v2": "^1.0.6",
+    "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1"
   }
 }
