@@ -12,7 +12,7 @@ import mongoose, { isValidObjectId } from "mongoose";
 // get all videos based on query, sort, pagination
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
-
+    console.log(userId);
     const pipeline = [];
 
     // for using Full Text based search u need to create a search index in mongoDB atlas
@@ -58,6 +58,28 @@ const getAllVideos = asyncHandler(async (req, res) => {
     } else {
         pipeline.push({ $sort: { createdAt: -1 } });
     }
+
+    pipeline.push(
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            "avatar.url": 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: "$ownerDetails"
+        }
+    )
 
     const videoAggregate = Video.aggregate(pipeline);
 
