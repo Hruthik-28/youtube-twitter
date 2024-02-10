@@ -2,12 +2,14 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
+import { Comment } from "../models/comment.model.js";
 import {
     uploadOnCloudinary,
     deleteOnCloudinary
 } from "../utils/cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import mongoose, { isValidObjectId } from "mongoose";
+import { Like } from "../models/like.model.js";
 
 // get all videos based on query, sort, pagination
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -98,7 +100,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 // get video, upload to cloudinary, create video
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description } = req.body;
-
+    
     if ([title, description].some((field) => field?.trim() === "")) {
         throw new ApiError(400, "All fields are required");
     }
@@ -138,7 +140,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
             public_id: thumbnail.public_id
         },
         owner: req.user?._id,
-        isPublished: true
+        isPublished: false
     });
 
     const videoUploaded = await Video.findById(video._id);
@@ -155,9 +157,15 @@ const publishAVideo = asyncHandler(async (req, res) => {
 // get video by id
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
-
+    // let userId = req.body;
+    
+    // userId = new mongoose.Types.ObjectId(userId)
     if (!isValidObjectId(videoId)) {
         throw new ApiError(400, "Invalid videoId");
+    }
+
+    if (!isValidObjectId(req.user?._id)) {
+        throw new ApiError(400, "Invalid userId");
     }
 
     const video = await Video.aggregate([
@@ -229,9 +237,7 @@ const getVideoById = asyncHandler(async (req, res) => {
                 },
                 isLiked: {
                     $cond: {
-                        if: {
-                            $in: [req.user?._id, "$likes.likedBy"]
-                        },
+                        if: {$in: [req.user?._id, "$likes.likedBy"]},
                         then: true,
                         else: false
                     }
@@ -378,6 +384,16 @@ const deleteVideo = asyncHandler(async (req, res) => {
     await deleteOnCloudinary(video.thumbnail.public_id); // video model has thumbnail public_id stored in it->check videoModel
     await deleteOnCloudinary(video.videoFile.public_id, "video"); // specify video while deleting video
 
+    // delete video likes
+    await Like.deleteMany({
+        video: videoId
+    })
+
+     // delete video comments
+    await Comment.deleteMany({
+        video: videoId,
+    })
+    
     return res
         .status(200)
         .json(new ApiResponse(200, {}, "Video deleted successfully"));
@@ -435,5 +451,5 @@ export {
     deleteVideo,
     getAllVideos,
     getVideoById,
-    togglePublishStatus
+    togglePublishStatus,
 };
