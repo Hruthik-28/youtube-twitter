@@ -168,4 +168,70 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         );
 });
 
-export { toggleVideoLike, toggleCommentLike, toggleTweetLike, getLikedVideos };
+const getLikedTweets = asyncHandler(async (req, res) => {
+    const likedTweetsAggregate = await Like.aggregate([
+        {
+            $match: {
+                likedBy: new mongoose.Types.ObjectId(req.user?._id),
+            },
+        },
+        {
+            $lookup: {
+                from: "tweets",
+                localField: "tweet",
+                foreignField: "_id",
+                as: "likedTweet",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "ownerDetails",
+                        },
+                    },
+                    {
+                        $unwind: "$ownerDetails",
+                    },
+                ],
+            },
+        },
+        {
+            $unwind: "$likedTweet",
+        },
+        {
+            $sort: {
+                createdAt: -1,
+            },
+        },
+        {
+            $project: {
+                _id: 0,
+                likedTweet: {
+                    _id: 1,
+                    content: 1,
+                    owner: 1,
+                    createdAt: 1,
+                    ownerDetails: {
+                        username: 1,
+                        fullName: 1,
+                        "avatar.url": 1,
+                    },
+                },
+            },
+        },
+    ]);
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                likedTweetsAggregate,
+                "Liked tweets fetched successfully"
+            )
+        );
+});
+
+
+export { toggleVideoLike, toggleCommentLike, toggleTweetLike, getLikedVideos, getLikedTweets };

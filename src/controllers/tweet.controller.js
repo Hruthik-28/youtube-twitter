@@ -3,7 +3,6 @@ import ApiError from "../utils/apiError.js";
 import { Tweet } from "../models/tweet.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import mongoose, { isValidObjectId } from "mongoose";
-import { User } from "../models/user.model.js";
 
 const createTweet = asyncHandler(async (req, res) => {
     const { content } = req.body;
@@ -14,7 +13,7 @@ const createTweet = asyncHandler(async (req, res) => {
 
     const tweet = await Tweet.create({
         content,
-        owner: req.user?._id,
+        owner: req.user?._id
     });
 
     if (!tweet) {
@@ -52,8 +51,8 @@ const updateTweet = asyncHandler(async (req, res) => {
         tweetId,
         {
             $set: {
-                content,
-            },
+                content
+            }
         },
         { new: true }
     );
@@ -88,7 +87,7 @@ const deleteTweet = asyncHandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(200, {tweetId}, "Tweet deleted successfully"));
+        .json(new ApiResponse(200, { tweetId }, "Tweet deleted successfully"));
 });
 
 const getUserTweets = asyncHandler(async (req, res) => {
@@ -101,8 +100,8 @@ const getUserTweets = asyncHandler(async (req, res) => {
     const tweets = await Tweet.aggregate([
         {
             $match: {
-                owner: new mongoose.Types.ObjectId(userId),
-            },
+                owner: new mongoose.Types.ObjectId(userId)
+            }
         },
         {
             $lookup: {
@@ -114,11 +113,11 @@ const getUserTweets = asyncHandler(async (req, res) => {
                     {
                         $project: {
                             username: 1,
-                            "avatar.url": 1,
-                        },
-                    },
-                ],
-            },
+                            "avatar.url": 1
+                        }
+                    }
+                ]
+            }
         },
         {
             $lookup: {
@@ -129,28 +128,28 @@ const getUserTweets = asyncHandler(async (req, res) => {
                 pipeline: [
                     {
                         $project: {
-                            likedBy: 1,
-                        },
-                    },
-                ],
-            },
+                            likedBy: 1
+                        }
+                    }
+                ]
+            }
         },
         {
             $addFields: {
                 likesCount: {
-                    $size: "$likeDetails",
+                    $size: "$likeDetails"
                 },
                 ownerDetails: {
-                    $first: "$ownerDetails",
+                    $first: "$ownerDetails"
                 },
                 isLiked: {
                     $cond: {
-                        if: {$in: [req.user?._id, "$likeDetails.likedBy"]},
+                        if: { $in: [req.user?._id, "$likeDetails.likedBy"] },
                         then: true,
                         else: false
                     }
                 }
-            },
+            }
         },
         {
             $sort: {
@@ -164,8 +163,8 @@ const getUserTweets = asyncHandler(async (req, res) => {
                 likesCount: 1,
                 createdAt: 1,
                 isLiked: 1
-            },
-        },
+            }
+        }
     ]);
 
     return res

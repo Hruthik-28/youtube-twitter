@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 import { Subscription } from "../models/subscription.model.js";
-import { Like } from "../models/like.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
@@ -134,14 +133,10 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     ]);
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(
-            200,
-            videos,
-            "channel stats fetched successfully"
-        )
-    );
+        .status(200)
+        .json(
+            new ApiResponse(200, videos, "channel stats fetched successfully")
+        );
 });
 
 export { getChannelStats, getChannelVideos };
